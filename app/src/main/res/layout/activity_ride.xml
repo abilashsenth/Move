@@ -13,9 +13,32 @@
         android:layout_alignParentTop="true"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="14dp"
+        android:id="@+id/mapsButton"
+        android:elevation="3sp"
+        android:onClick="mapOpen"
         android:src="@drawable/maps_icon"
         android:layout_alignParentRight="true"
         android:layout_marginRight="16dp" />
+
+    <pl.droidsonroids.gif.GifImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/samplead" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:src="@drawable/sampleadvertannounce" />
+
+    <ImageView
+        android:layout_width="180sp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:onClick="finishRide"
+        android:src="@drawable/finish_ride" />
 
 
 

@@ -16,6 +16,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -32,6 +34,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -64,6 +68,8 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
     int permissionLocationCheckFine;
     GoogleApiClient mGoogleApiClient;
     SupportMapFragment mapFragment;
+
+    double mLatitude, mLongitude;
 
     /**
      * sample latitudes and longitudes of places as follows:
@@ -179,7 +185,7 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
         mCurrentLocation = location;
         mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 5);
        /* if (googleMap != null)
             googleMap.animateCamera(cameraUpdate);*/
         updateUi();
@@ -247,35 +253,39 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
         googleMap.setMyLocationEnabled(true);
         googleMap.setOnMarkerClickListener(this);
         LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
+        mLatitude = latLng.latitude;
+        mLongitude = latLng.longitude;
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 11);
         googleMap.animateCamera(cameraUpdate);
         this.googleMap = googleMap;
 
+        BitmapDescriptor mBitmapDescriptor = BitmapDescriptorFactory.fromResource(R.drawable.bike_icon);
+
         //make more markeroptions and addMarkers
         markerOptions1 = new MarkerOptions().position(new LatLng(latArray[0], longArray[0])).
-                title("banashankari");
+                title("banashankari").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions1);
 
 
         markerOptions2 = new MarkerOptions().position(new LatLng(latArray[1], longArray[1])).
-                title("whitefield");
+                title("whitefield").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions2);
 
         markerOptions3 = new MarkerOptions().position(new LatLng(latArray[2], longArray[2])).
-                title("yeshwantpur");
+                title("yeshwantpur").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions3);
 
         markerOptions4 = new MarkerOptions().position(new LatLng(latArray[3], longArray[3])).
-                title("koramangla");
+                title("koramangla").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions4);
 
 
         markerOptions5 = new MarkerOptions().position(new LatLng(latArray[4], longArray[4])).
-                title("Electronic city");
+                title("Electronic city").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions5);
 
         markerOptions6 = new MarkerOptions().position(new LatLng(latArray[5], longArray[5])).
-                title("Airport");
+                title("Airport").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions6);
 
         //googleMap.setMinZoomPreference(13.0f);
@@ -284,7 +294,13 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
 
     @Override
     public boolean onMarkerClick(Marker arg0) {
-        scanQRCode();
+        //TODO make a ui
+        RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.swipeView);
+        relativeLayout.setVisibility(View.VISIBLE);
+        TextView mTextView = (TextView) findViewById(R.id.slideUpText);
+        mTextView.setText(arg0.getTitle());
+
+        //scanQRCode();
         return false;
     }
 
@@ -292,7 +308,7 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
     /***
      * Starts a scan of QR code of the bicycle
      */
-    public void scanQRCode() {
+    public void scanQRCode(View v) {
         // variable to initiate QR scan
         IntentIntegrator intentIntegrator = new IntentIntegrator(this);
         intentIntegrator.setOrientationLocked(true);
@@ -365,8 +381,11 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
                     dialogCustomView.findViewById(R.id.ridestart_yes).setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            // TODO: Start ride
-                            dialog.dismiss();
+                            // opens RideActivity
+                            Intent mIntent = new Intent (MapActivity.this, RideActivity.class);
+                            mIntent.putExtra("Latitude", mLatitude);
+                            mIntent.putExtra("Longitude", mLongitude);
+                            startActivity(mIntent);
 
                         }
                     });

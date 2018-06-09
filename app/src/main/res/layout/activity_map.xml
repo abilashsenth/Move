@@ -1,17 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.sothree.slidinguppanel.SlidingUpPanelLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/slidingLayout"
+    android:gravity="bottom"
+    xmlns:sothree="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    sothree:umanoPanelHeight="40sp"
+    sothree:umanoShadowHeight="2dp"
     tools:context=".MapActivity">
 
-    <fragment
-        android:id="@+id/map"
-        android:name="com.google.android.gms.maps.SupportMapFragment"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:background="#ffffff"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:textSize="23sp"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="18dp"
+            android:text="scan n move" />
+
+        <fragment
+            android:id="@+id/map"
+            android:layout_marginTop="70sp"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="80sp"
+            android:src="@drawable/barcode_icon"
+            android:id="@+id/barcodeScanIcon"
+            android:layout_alignParentBottom="true"
+            android:onClick="scanQRCode"/>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:id="@+id/swipeView"
+        android:layout_height="match_parent"
+        >
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/slideUpText"
+            android:layout_centerHorizontal="true"
+            android:layout_margin="10sp"
+            android:textColor="#000000"
+            android:textSize="30sp"
+            android:text="Select a bike"/>
+
+        <ImageView
+            android:layout_marginTop="20sp"
+            android:layout_width="240sp"
+            android:layout_centerHorizontal="true"
+            android:layout_height="wrap_content"
+            android:onClick="scanQRCode"
+            android:src="@drawable/scroll_image"/>
+    </RelativeLayout>
 
 
 
 
-</RelativeLayout>
+
+
+</com.sothree.slidinguppanel.SlidingUpPanelLayout>
