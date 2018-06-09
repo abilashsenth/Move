@@ -1,11 +1,17 @@
 package io.move.move;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
+import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.os.AsyncTask;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,27 +19,25 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -41,20 +45,32 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.DateFormat;
+import java.util.Date;
 
-public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+public class MapActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, LocationListener, OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private Socket socket;
     private static final int SERVERPORT = 6000;
     private static final String SERVER_IP = "192.168.15.187";
 
-    GoogleMap mGoogleMap;
-    LocationSettingsRequest.Builder mBuilder;
-    LocationRequest mLocationRequest;
-    SettingsClient mSettingsClient;
-    FusedLocationProviderClient mFusedLocationProviderClient;
+    GoogleMap googleMap;
+    private Location mCurrentLocation;
+    //private LocationManager locationManager;
+    private LocationRequest mLocationRequest;
+    boolean mRequestLocationUpdates;
+    String mLastUpdateTime;
+    int permissionLocationCheckFine;
+    GoogleApiClient mGoogleApiClient;
+    SupportMapFragment mapFragment;
 
-    SlidingUpPanelLayout mSlidingUpPanel;
+    /**
+     * sample latitudes and longitudes of places as follows:
+     * banashankari, whitefield, yeshwantpur, koramangla, electronic city, airport.
+     */
+    double[] latArray = {12.9255, 12.9698, 13.0280, 12.9279, 12.8407, 13.1986};
+    double[] longArray = {77.5468, 77.7499, 77.5409, 77.6271, 77.6763, 77.7066};
 
     MarkerOptions markerOptions1;
     MarkerOptions markerOptions2;
@@ -63,19 +79,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     MarkerOptions markerOptions5;
     MarkerOptions markerOptions6;
 
-    /**
-     *     sample latitudes and longitudes of places as follows:
-            banashankari, whitefield, yeshwantpur, koramangla, electronic city, airport.
-     */
-    double[] latitudes = {12.9255, 12.9698, 13.0280, 12.9279, 12.8407, 13.1986};
-    double[] longitudes = {77.5468, 77.7499, 77.5409, 77.6271, 77.6763, 77.7066};
-
-
-    String TAG = "MapView, MOOVEBABY";
-
-    //last location
-    public double lat;
-    public double longitude;
+    private static final long MIN_TIME = 400;
+    private static final float MIN_DISTANCE = 1000;
+    String TAG = "TAG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,158 +89,210 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         setContentView(R.layout.activity_map);
         //mSlidingUpPanel = (SlidingUpPanelLayout) findViewById(R.id.mSlidingUpPanel);
         new Thread(new ClientThread()).start();
+        checkForPermissions();
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        //makes a location request
-        createLocRequest();
-        //makes the LocationSettingsRequest.Builder
-        mBuilder = new LocationSettingsRequest.Builder();
-        mSettingsClient = LocationServices.getSettingsClient(this);
-        Task<LocationSettingsResponse> task = mSettingsClient.checkLocationSettings(mBuilder.build());
-
-
-        //when the location settings are all set and good
-        task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
-            @Override
-            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                    //Location settings are active. can get data.
-                    Log.e(TAG, "location settings are OK. MAPVIEW");
-                    pullLastLocationData();
-            }
-        });
-
-        //when the user location settings are not a-OK
-        task.addOnFailureListener(this, new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                //location settings not active. reasons be phone's location turned off or no GPS.
-                //TODO respond to user to turn on gps.
-                Log.e(TAG, "location settings are NOT OK. MAPVIEW");
-
-            }
-        });
-
+        //declare the map
+        mapFragment = (SupportMapFragment)
+                getSupportFragmentManager().findFragmentById(R.id.map);
     }
 
-    @SuppressLint("MissingPermission")
-    private void pullLastLocationData() {
-        //TODO HAVE TO ASK FOR PERMISSION IN THE SPLASH>>>> FOR NOW WE ARE ENABLING IT MANUALLY.
-        Log.e(TAG, "dont forget to ask permission");
-        mFusedLocationProviderClient = new FusedLocationProviderClient(this);
-        mFusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                if(location!= null){
-                    Log.e(TAG, "location INFO are OK. MAPVIEW");
-                    lat =  location.getLatitude();
-                    Log.e(TAG, "Latitude is "+ lat );
-                    longitude =  location.getLongitude();
-                    Log.e(TAG, "Longitude is "+ longitude );
+    public void letsStartListeningLocation() {
+
+        mRequestLocationUpdates = true;
 
 
+        // Create an instance of GoogleAPIClient.
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
 
-                    updateMapView();
-                }
-            }
-        });
+            mGoogleApiClient.connect();
+        }
+        //mLocationRequest is initialized
 
+        createLocationRequest();
 
-    }
-
-    private void updateMapView() {
-        //gets the last known location, focuses on map.
-
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        Log.e(TAG, "location settings are OK. NOW MAP IS UPDATING TO THAT LOCATION COORDINATES");
-        MarkerOptions mMarkerOptions = new MarkerOptions().position(new LatLng(lat, longitude));
-        BitmapDescriptor mIcon = BitmapDescriptorFactory.fromResource(R.drawable.user_location);
-        mMarkerOptions.icon(mIcon);
-
-        /**
-         *         TODO BASICALLY THIS IS NOT SUPPOSED TO BE A MARKER>>>
-         *         TODO the actual camera view should be here, continuously updating through a loop
-         *         TODO but im putting that as a marker cuz im an asshole
-         *
-         */
-
-        mGoogleMap.addMarker(mMarkerOptions);
+        //then the locationSettings builder is also initialized
+        LocationSettingsRequest.Builder mLocationSettingsRequest = new
+                LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
+        PendingResult<LocationSettingsResult> result =
+                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
+                        mLocationSettingsRequest.build());
 
 
-
-
-    }
-
-    private void createLocRequest() {
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-        mLocationRequest.setFastestInterval(5000);
-        mLocationRequest.setInterval(10000);
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
-        Log.e(TAG, "the Map is ready");
-        mGoogleMap = googleMap;
-        mGoogleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);//depends.
-        if(lat != 0 && longitude != 0){
-            mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(lat, longitude)));
-            mGoogleMap.setMaxZoomPreference(400);
-            mGoogleMap.setMinZoomPreference(10);
+    protected void onStart() {
+        letsStartListeningLocation();
+        super.onStart();
+    }
 
-        }else{
-            //mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(12.9754, 80.2206)));
-            //mGoogleMap.setMaxZoomPreference(200);
-            //mGoogleMap.setMinZoomPreference(10);
+    @Override
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
+
+    }
+
+    protected void createLocationRequest() {
+        //sets settings for the locationrequest
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            /* allotted interval is 10 sec, and the fastest interval it can recieve
+            due to other apps is 5 seconds to revent exceptions
+            */
+        mLocationRequest.setInterval(20000);
+        mLocationRequest.setFastestInterval(5000);
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (mRequestLocationUpdates) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        }
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
+       /* if (googleMap != null)
+            googleMap.animateCamera(cameraUpdate);*/
+        updateUi();
+    }
+
+    private void updateUi() {
+        //lastUpdatedTime.setText("Location last updated on " + mLastUpdateTime);
+//        coordinateTextView.setText("Latitude is " + String.valueOf(mCurrentLocation.getLatitude())
+        //              + "Longitude is" + String.valueOf(mCurrentLocation.getLongitude()));
+        mapFragment.getMapAsync(this);
+
+    }
+
+    //permissions
+    private void checkForPermissions() {
+        //check if permissions are granted, and then continue
+        permissionLocationCheckFine = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        if (permissionLocationCheckFine != PackageManager.PERMISSION_GRANTED) {
+            //permission not granted. proceed to ask
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    12);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 12: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay!
+                    onRestart();
+
+
+                } else {
+
+                    // permission denied, boo!
+                    //for now, the app keeps asking until the user agrees. NOTE: ITS A BAD UX PRACTICE
+                    checkForPermissions();
+                }
+                return;
+            }
 
         }
-        /*mGoogleMap.setLatLngBoundsForCameraTarget(new LatLngBounds(new LatLng(13.0012,80.2565),
-                new LatLng(12.9754,80.2206)));//gotta include the city bounds. here it's adyar and vChery*/
+    }
 
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        googleMap.setMyLocationEnabled(true);
         googleMap.setOnMarkerClickListener(this);
-
+        LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
+        googleMap.animateCamera(cameraUpdate);
+        this.googleMap = googleMap;
 
         //make more markeroptions and addMarkers
-        markerOptions1 = new MarkerOptions().position(new LatLng(latitudes[0], longitudes[0])).
+        markerOptions1 = new MarkerOptions().position(new LatLng(latArray[0], longArray[0])).
                 title("banashankari");
         googleMap.addMarker(markerOptions1);
 
 
-        markerOptions2 = new MarkerOptions().position(new LatLng(latitudes[1], longitudes[1])).
+        markerOptions2 = new MarkerOptions().position(new LatLng(latArray[1], longArray[1])).
                 title("whitefield");
         googleMap.addMarker(markerOptions2);
 
-        markerOptions3 = new MarkerOptions().position(new LatLng(latitudes[2], longitudes[2])).
+        markerOptions3 = new MarkerOptions().position(new LatLng(latArray[2], longArray[2])).
                 title("yeshwantpur");
         googleMap.addMarker(markerOptions3);
 
-        markerOptions4 = new MarkerOptions().position(new LatLng(latitudes[3], longitudes[3])).
+        markerOptions4 = new MarkerOptions().position(new LatLng(latArray[3], longArray[3])).
                 title("koramangla");
         googleMap.addMarker(markerOptions4);
 
 
-
-        markerOptions5 = new MarkerOptions().position(new LatLng(latitudes[4], longitudes[4])).
+        markerOptions5 = new MarkerOptions().position(new LatLng(latArray[4], longArray[4])).
                 title("Electronic city");
         googleMap.addMarker(markerOptions5);
 
-        markerOptions6 = new MarkerOptions().position(new LatLng(latitudes[5], longitudes[5])).
+        markerOptions6 = new MarkerOptions().position(new LatLng(latArray[5], longArray[5])).
                 title("Airport");
         googleMap.addMarker(markerOptions6);
 
+        //googleMap.setMinZoomPreference(13.0f);
 
+    }
+
+    @Override
+    public boolean onMarkerClick(Marker arg0) {
+        scanQRCode();
+        return false;
     }
 
 
     /***
      * Starts a scan of QR code of the bicycle
      */
-    public void scanQRCode(View view) {
+    public void scanQRCode() {
         // variable to initiate QR scan
         IntentIntegrator intentIntegrator = new IntentIntegrator(this);
         intentIntegrator.setOrientationLocked(true);
@@ -318,26 +376,5 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
-    }
-
-    @Override
-    public boolean onMarkerClick(Marker marker) {
-        /**
-         * finish for all markers
-         */
-        if(marker.equals(markerOptions1)){
-            //mSlidingUpPanel.setVisibility(View.VISIBLE);
-        }else if(marker.equals(markerOptions2)){
-            //mSlidingUpPanel.setVisibility(View.VISIBLE);
-
-
-        }else if(marker.equals(markerOptions2)){
-        //mSlidingUpPanel.setVisibility(View.VISIBLE);
-
-
-        }else{
-
-        }
-        return false;
     }
 }

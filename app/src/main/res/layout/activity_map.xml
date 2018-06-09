@@ -12,15 +12,6 @@
         android:layout_height="match_parent" />
 
 
-    <Button
-        android:onClick="scanQRCode"
-        android:layout_width="120sp"
-        android:layout_height="60sp"
-        android:text="Scan QR"
-        android:layout_alignBottom="@id/map"
-        android:layout_centerHorizontal="true"/>
-
-
 
 
 </RelativeLayout>
