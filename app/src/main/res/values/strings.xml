@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Move</string>
+    <string name="phone_hint">Phone</string>
+    <string name="verify">VERIFY</string>
+    <string name="login">Login</string>
+    <string name="country_code">+91</string>
+
+    <string name="phone_number_confirmation_title">Confirm your number</string>
+    <string name="phone_number_confirmation_message">We will be sending an SMS to %1$s for verification. Standard SMS rates may apply</string>
+    <string name="phone_number_confirmation_confirm">Confirm</string>
+    <string name="phone_number_confirmation_cancel">Cancel</string>
+
+    <string name="phone_number_verification_title">Verify your number</string>
+    <string name="phone_number_verification_message">We have sent an SMS to %1$s for verification. Please enter the code below</string>
+    <string name="zero">0</string>
+    <string name="_000000">000000</string>
+</resources>
