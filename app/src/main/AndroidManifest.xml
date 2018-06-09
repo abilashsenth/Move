@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="io.move.move">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -22,6 +24,7 @@
         </activity>
         <activity android:name=".VerifyActivity" />
         <activity android:name=".MapActivity" />
+        <activity android:name=".RideActivity" />
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:screenOrientation="portrait"
@@ -30,8 +33,6 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB4rzj8a3CsxiF3AKpEtoznWYo7DFdfeOE" />
-
-        <activity android:name=".RideActivity"></activity>
     </application>
 
 </manifest>

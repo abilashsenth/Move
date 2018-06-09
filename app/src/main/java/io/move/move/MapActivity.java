@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.location.Location;
 import android.support.annotation.NonNull;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,8 +34,19 @@ import com.google.android.gms.tasks.Task;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
+
+    private Socket socket;
+    private static final int SERVERPORT = 6000;
+    private static final String SERVER_IP = "192.168.15.187";
 
     GoogleMap mGoogleMap;
     LocationSettingsRequest.Builder mBuilder;
@@ -70,6 +82,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         //mSlidingUpPanel = (SlidingUpPanelLayout) findViewById(R.id.mSlidingUpPanel);
+        new Thread(new ClientThread()).start();
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -230,6 +243,29 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         intentIntegrator.initiateScan();
     }
 
+    class ClientThread implements Runnable {
+
+        @Override
+        public void run() {
+
+            try {
+                InetAddress serverAddr = InetAddress.getByName(SERVER_IP);
+                Log.v("TAG", "InetAddress created successfully");
+                socket = new Socket(serverAddr, SERVERPORT);
+                Log.v("TAG", "Client created successfully");
+
+            } catch (UnknownHostException e1) {
+                Log.v("TAG", "unknownhostexception");
+                e1.printStackTrace();
+            } catch (IOException e1) {
+                Log.v("TAG", "ioexception");
+                e1.printStackTrace();
+            }
+
+        }
+
+    }
+
     /***
      * Fires up after QR scan is done
      */
@@ -240,8 +276,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             if (result.getContents() == null) {
                 Toast.makeText(this, "Error", Toast.LENGTH_LONG).show();
             } else {
-                String contents = result.getContents();
+                final String contents = result.getContents();
                 Log.v("TAG", "QR code contents: " + contents);
+                AsyncTask.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            PrintWriter out = new PrintWriter(new BufferedWriter(
+                                    new OutputStreamWriter(socket.getOutputStream())),
+                                    true);
+                            out.println(contents);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
                 final MaterialDialog dialog = new MaterialDialog.Builder(this)
                         .title("Starting a ride")
                         .customView(R.layout.dialog_ridestart, true)
@@ -259,6 +309,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                         public void onClick(View v) {
                             // TODO: Start ride
                             dialog.dismiss();
+
                         }
                     });
                     dialog.show();
