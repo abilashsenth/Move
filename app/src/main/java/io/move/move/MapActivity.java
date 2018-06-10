@@ -288,8 +288,7 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
     @Override
     public boolean onMarkerClick(Marker arg0) {
         //TODO make a ui
-        RelativeLayout relativeLayout = findViewById(R.id.swipeView);
-        relativeLayout.setVisibility(View.VISIBLE);
+        findViewById(R.id.swipeImage).setVisibility(View.VISIBLE);
         TextView mTextView = findViewById(R.id.slideUpText);
         mTextView.setText(arg0.getTitle());
 

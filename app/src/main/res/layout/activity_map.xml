@@ -7,7 +7,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    sothree:umanoPanelHeight="40sp"
+    sothree:umanoPanelHeight="50sp"
     sothree:umanoShadowHeight="2dp"
     tools:context=".MapActivity">
 
@@ -44,7 +44,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:id="@+id/swipeView"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         >
         <TextView
             android:layout_width="wrap_content"
@@ -57,6 +57,8 @@
             android:text="Select a bike"/>
 
         <ImageView
+            android:id="@+id/swipeImage"
+            android:visibility="gone"
             android:layout_marginTop="20sp"
             android:layout_width="240sp"
             android:layout_centerHorizontal="true"
