@@ -15,9 +15,6 @@ public class RideActivity extends AppCompatActivity {
         setContentView(R.layout.activity_ride);
         initLat = getIntent().getDoubleExtra("Latitude", 0);
         initLong = getIntent().getDoubleExtra("Longitude", 0);
-
-
-
     }
 
     public void mapOpen(View view) {

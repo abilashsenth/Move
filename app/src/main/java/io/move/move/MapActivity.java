@@ -1,12 +1,9 @@
 package io.move.move;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.location.LocationManager;
-import android.os.ResultReceiver;
 import android.support.annotation.NonNull;
 import android.os.AsyncTask;
 import android.support.annotation.Nullable;
@@ -75,8 +72,8 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
      * sample latitudes and longitudes of places as follows:
      * banashankari, whitefield, yeshwantpur, koramangla, electronic city, airport.
      */
-    double[] latArray = {12.9255, 12.9698, 13.0280, 12.9279, 12.8407, 13.1986};
-    double[] longArray = {77.5468, 77.7499, 77.5409, 77.6271, 77.6763, 77.7066};
+    double[] latArray = {12.992525, 12.993536, 12.995831, 12.993273, 12.992860, 12.993814};
+    double[] longArray = {77.659811, 77.661136, 77.660573, 77.661879, 77.660948, 77.662246};
 
     MarkerOptions markerOptions1;
     MarkerOptions markerOptions2;
@@ -84,10 +81,6 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
     MarkerOptions markerOptions4;
     MarkerOptions markerOptions5;
     MarkerOptions markerOptions6;
-
-    private static final long MIN_TIME = 400;
-    private static final float MIN_DISTANCE = 1000;
-    String TAG = "TAG";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -255,7 +248,7 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
         LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
         mLatitude = latLng.latitude;
         mLongitude = latLng.longitude;
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 11);
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 17);
         googleMap.animateCamera(cameraUpdate);
         this.googleMap = googleMap;
 
@@ -263,29 +256,29 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
 
         //make more markeroptions and addMarkers
         markerOptions1 = new MarkerOptions().position(new LatLng(latArray[0], longArray[0])).
-                title("banashankari").icon(mBitmapDescriptor);
+                title("SBI").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions1);
 
 
         markerOptions2 = new MarkerOptions().position(new LatLng(latArray[1], longArray[1])).
-                title("whitefield").icon(mBitmapDescriptor);
+                title("RMZ").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions2);
 
         markerOptions3 = new MarkerOptions().position(new LatLng(latArray[2], longArray[2])).
-                title("yeshwantpur").icon(mBitmapDescriptor);
+                title("Railway Parallel Road").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions3);
 
         markerOptions4 = new MarkerOptions().position(new LatLng(latArray[3], longArray[3])).
-                title("koramangla").icon(mBitmapDescriptor);
+                title("Gopalan Cinemas").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions4);
 
 
         markerOptions5 = new MarkerOptions().position(new LatLng(latArray[4], longArray[4])).
-                title("Electronic city").icon(mBitmapDescriptor);
+                title("Genesis Fitness Centre").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions5);
 
         markerOptions6 = new MarkerOptions().position(new LatLng(latArray[5], longArray[5])).
-                title("Airport").icon(mBitmapDescriptor);
+                title("Sri Krishna Gangothri").icon(mBitmapDescriptor);
         googleMap.addMarker(markerOptions6);
 
         //googleMap.setMinZoomPreference(13.0f);
@@ -295,9 +288,9 @@ public class MapActivity extends AppCompatActivity implements GoogleApiClient.Co
     @Override
     public boolean onMarkerClick(Marker arg0) {
         //TODO make a ui
-        RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.swipeView);
+        RelativeLayout relativeLayout = findViewById(R.id.swipeView);
         relativeLayout.setVisibility(View.VISIBLE);
-        TextView mTextView = (TextView) findViewById(R.id.slideUpText);
+        TextView mTextView = findViewById(R.id.slideUpText);
         mTextView.setText(arg0.getTitle());
 
         //scanQRCode();
